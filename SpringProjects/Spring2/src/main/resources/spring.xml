@@ -1,0 +1,15 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean class="com.ibrahim.Student">
+        <constructor-arg name="rollNo" value="21"/>
+        <constructor-arg name="name" value="Ibrahim"/>
+        <constructor-arg name="comp" ref="lap"/>
+    </bean>
+
+    <bean id = "lap" class="com.ibrahim.Laptop">
+    </bean>
+
+</beans>

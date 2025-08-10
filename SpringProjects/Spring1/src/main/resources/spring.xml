@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+<!--    <bean id = "alien1" class = "com.ibrahim.Alien" scope = "prototype">-->
+<!--    <bean id = "alien1" class = "com.ibrahim.Alien" autowire="byName"> &lt;!&ndash; singleton &ndash;&gt;-->
+    <bean id = "alien1" class = "com.ibrahim.Alien" autowire="byType">
+        <property name="age" value="21">
+        </property>
+<!--        <constructor-arg type = "int" value="21" />-->
+<!--        <constructor-arg type = "int" value="21" />-->
+
+        <property name="com" ref="com1">
+<!--            <bean id = "com1" class = "com.ibrahim.Laptop">-->
+<!--            </bean>-->
+        </property>
+<!--        <constructor-arg type = "com.ibrahim.Laptop" ref = "lap1" />-->
+
+<!--        <constructor-arg index="1" value="21"/>-->
+<!--        <constructor-arg index="2" ref="lap1"/>-->
+<!--        <constructor-arg index="3" value="200000"/>-->
+<!--        <constructor-arg name = "age" value="21"/>-->
+<!--        <constructor-arg name = "salary" value="200000"/>-->
+<!--        <constructor-arg name = "lap" ref="lap1"/>-->
+    </bean>
+<!--    <bean id = "alien2" class = "com.ibrahim.Alien">-->
+<!--    </bean>-->
+
+    <bean id = "com" class = "com.ibrahim.Desktop" lazy-init="true">
+    </bean>
+<!--    <bean id = "com1" class = "com.ibrahim.Laptop" primary="true">-->
+<!--    </bean>-->
+</beans>
