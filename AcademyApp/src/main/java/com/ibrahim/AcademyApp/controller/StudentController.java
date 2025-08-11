@@ -5,7 +5,6 @@ import com.ibrahim.AcademyApp.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +30,14 @@ public class StudentController {
 
     @GetMapping("/student/{studentID}")
     public ResponseEntity<Student> getStudentById(@PathVariable("studentID") int sid) {
+        return new ResponseEntity<>(service.getStudentById(sid), HttpStatus.OK);
+    }
+
+    @PutMapping("/student/{studentId}")
+    @ResponseBody
+    public ResponseEntity<Student> updateStudent(@PathVariable("studentId") int sid, @RequestBody Student student){
+        service.updateStudent(sid, student);
+
         return new ResponseEntity<>(service.getStudentById(sid), HttpStatus.OK);
     }
 }

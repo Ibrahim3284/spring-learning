@@ -24,4 +24,13 @@ public class StudentService {
     public Student getStudentById(int sid) {
         return repo.findById(sid).orElse(new Student());
     }
+
+    public void updateStudent(int sid, Student student) {
+        Student student1 = repo.findById(sid).orElse(new Student());
+
+        student1.setMarks(student.getMarks());
+        student1.setName(student.getName());
+        student1.setStandard(student.getStandard());
+        repo.save(student1);
+    }
 }
