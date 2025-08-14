@@ -1,0 +1,31 @@
+docker --version
+docker run hello-world
+docker ps (containers running)
+docker ps -a (containers ran)
+docker images
+docker rm 8a4827f84f64 (removing container)
+docker rmi 8a4827f84f64 (removing image)
+docker create hello-world (creates container for image hello-world)
+docker search hello-world (search images)
+docker pull hello-world (pulls image)
+docker start 07ab (starts container)
+docker stop 07ab91a1dfbe (stop container)
+docker pause 07ab91a1dfbe (pause container)
+
+docker run hello-world (Combination of all steps, download image start container etc…)
+
+docker run -it openjdk:26-trixie (interactive, so that it doesn’t comeout after completing)
+
+docker exec 530e7e1ae615 ls -a (lists folder of running image)
+
+docker cp target/docker-demo.jar musing_jepsen:/tmp (Copy jar file to container)
+
+docker commit musing_jepsen ibrahim/docker-demo:v1 (For creating image)
+
+docker commit --change='CMD ["java", "-jar", "/tmp/docker-demo.jar"]' musing_jepsen ibrahim/docker-demo:v1 (For creating image to execute jar and not jshell by default)
+
+
+docker run -p 8080:8080 ibrahim/docker-demo:v1
+(Docker port : Machine port)
+
+docker build -t ibrahim/docker-demo:v3 . (With Docker file)
