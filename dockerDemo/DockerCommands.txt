@@ -29,3 +29,6 @@ docker run -p 8080:8080 ibrahim/docker-demo:v1
 (Docker port : Machine port)
 
 docker build -t ibrahim/docker-demo:v3 . (With Docker file)
+docker network ls (Listing down networks)
+docker-compose down (Brining down containers)
+docker-compose up --build (Building docker compose)
