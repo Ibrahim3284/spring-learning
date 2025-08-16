@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.http.HttpResponse;
 import java.util.List;
 
 @RestController
@@ -17,15 +18,21 @@ public class StudentController {
 
     @GetMapping({"/", "/students"})
     @ResponseBody
-    public ResponseEntity<List<Student>> getStudents() {
-        List<Student> students = service.getStudents();
+    public ResponseEntity<List<Student>> getStudents(@RequestParam("standard") Integer standard) {
+        List<Student> students;
+        if(standard == null) students = service.getStudents();
+        else students = service.getStudentsByParam(standard);
         return new ResponseEntity<>(students, HttpStatus.OK);
     }
 
     @PostMapping("/student")
     public ResponseEntity<String> addStudent(@RequestBody Student student) {
-        service.addStudent(student);
-        return new ResponseEntity<>("Student added", HttpStatus.CREATED);
+
+        if(student.getMarks() > 100) return new ResponseEntity<>("Marks should be less than or equal to 100", HttpStatus.BAD_REQUEST);
+        else {
+            service.addStudent(student);
+            return new ResponseEntity<>("Student added", HttpStatus.CREATED);
+        }
     }
 
     @GetMapping("/student/{studentID}")

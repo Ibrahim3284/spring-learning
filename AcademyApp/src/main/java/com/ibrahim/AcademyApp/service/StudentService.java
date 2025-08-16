@@ -33,4 +33,9 @@ public class StudentService {
         student1.setStandard(student.getStandard());
         repo.save(student1);
     }
+
+    public List<Student> getStudentsByParam(int standard) {
+
+        return repo.findByStandard(standard);
+    }
 }
