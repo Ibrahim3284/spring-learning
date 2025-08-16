@@ -15,7 +15,7 @@ public class StudentController {
     @Autowired
     private StudentService service;
 
-    @GetMapping("/students")
+    @GetMapping({"/", "/students"})
     @ResponseBody
     public ResponseEntity<List<Student>> getStudents() {
         List<Student> students = service.getStudents();
