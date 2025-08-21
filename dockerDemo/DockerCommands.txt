@@ -32,3 +32,5 @@ docker build -t ibrahim/docker-demo:v3 . (With Docker file)
 docker network ls (Listing down networks)
 docker-compose down (Brining down containers)
 docker-compose up --build (Building docker compose)
+
+docker buildx build --platform=linux/amd64 -t quiz-service . (For platform related errors)
