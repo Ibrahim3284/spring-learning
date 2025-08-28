@@ -1,4 +1,4 @@
-package com.arrowacademy.user_service.service;
+package com.arrow_academy.test_service.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;

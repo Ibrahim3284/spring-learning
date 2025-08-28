@@ -1,7 +1,9 @@
 package com.arrowacademy.user_service.service;
 
 import com.arrowacademy.user_service.dao.StudentDao;
+import com.arrowacademy.user_service.model.Faculty;
 import com.arrowacademy.user_service.model.Student;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -79,6 +82,7 @@ public class StudentService {
                 studentToUpdate.setSection(student.getSection());
                 studentToUpdate.setGender(student.getGender());
                 studentToUpdate.setDateOfBirth(student.getDateOfBirth());
+                studentToUpdate.setYearOfStudy(student.getYearOfStudy());
                 studentToUpdate.setEnrollmentDate(student.getEnrollmentDate());
                 studentToUpdate.setActive(student.isActive());
                 studentDao.save(studentToUpdate);
@@ -126,5 +130,20 @@ public class StudentService {
         } else {
             return new ResponseEntity<>("Only Admins can delete student", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    public ResponseEntity<?> addMultipleStudents(String token, List<Student> students) {
+        return new ResponseEntity<>(studentDao.saveAll(students), HttpStatus.CREATED);
+    }
+
+    public ResponseEntity<?> getStudentDetails(String token) {
+
+        JSONObject parsedToken = jwtService.parseTokenAsJSON(token);
+        String username = String.valueOf(parsedToken.get("sub"));
+
+        Optional<Student> students = studentDao.findByEmail(username);
+
+        if(students.isPresent()) return new ResponseEntity<>(students.get(), HttpStatus.OK);
+        else return new ResponseEntity<>("Student not present with email: " + username, HttpStatus.NOT_FOUND);
     }
 }

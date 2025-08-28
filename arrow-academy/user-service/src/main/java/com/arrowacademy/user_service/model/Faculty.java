@@ -1,7 +1,6 @@
 package com.arrowacademy.user_service.model;
 
 import com.arrowacademy.user_service.enums.Gender;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -11,43 +10,51 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 @Entity
-public class Student {
+@Table(
+        name = "faculty",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"email", "department"})
+        }
+)
+public class Faculty {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @NotBlank
     @JsonProperty("firstName")
     private String firstName;
+    @JsonProperty("lastName")
     private String lastName;
     @NotBlank
-    @Email(message = "Email is in invalid format")
-    @Column(nullable = false, unique = true)
+    @Email
     @JsonProperty("email")
     private String email;
     @NotBlank
     @JsonProperty("phoneNo")
     private String phoneNo;
+    @NotBlank
+    @JsonProperty("qualification")
+    private String qualification;
+    @NotBlank
+    @JsonProperty("department")
+    private String department;
     @NotNull
-    private int yearOfStudy;
-    @NotNull(message = "Date of birth format is invalid. Expected yyyy-MM-dd")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonProperty("dateOfBirth")
     private LocalDate dateOfBirth;
-
     @NotNull
-    @Enumerated(EnumType.STRING)
+    @JsonProperty("dateOfJoining")
+    private LocalDate dateOfJoining;
+    @NotNull
     @JsonProperty("gender")
     private Gender gender;
-
-    @NotBlank
-    @JsonProperty("section")
-    private String section;
+    @NotNull
     @JsonProperty("isActive")
-    private boolean isActive;
-
-    @NotNull(message = "Enrollment date format is invalid. Expected yyyy-MM-dd")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate enrollmentDate;
+    private Boolean isActive;
+    @NotNull
+    @JsonProperty("linkedInProfileURL")
+    private String linkedInProfileURL;
 
     public int getId() {
         return id;
@@ -89,12 +96,20 @@ public class Student {
         this.phoneNo = phoneNo;
     }
 
-    public int getYearOfStudy() {
-        return yearOfStudy;
+    public String getQualification() {
+        return qualification;
     }
 
-    public void setYearOfStudy(int yearOfStudy) {
-        this.yearOfStudy = yearOfStudy;
+    public void setQualification(String qualification) {
+        this.qualification = qualification;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
     }
 
     public LocalDate getDateOfBirth() {
@@ -105,6 +120,14 @@ public class Student {
         this.dateOfBirth = dateOfBirth;
     }
 
+    public LocalDate getDateOfJoining() {
+        return dateOfJoining;
+    }
+
+    public void setDateOfJoining(LocalDate dateOfJoining) {
+        this.dateOfJoining = dateOfJoining;
+    }
+
     public Gender getGender() {
         return gender;
     }
@@ -113,27 +136,19 @@ public class Student {
         this.gender = gender;
     }
 
-    public String getSection() {
-        return section;
-    }
-
-    public void setSection(String section) {
-        this.section = section;
-    }
-
-    public boolean isActive() {
+    public Boolean getActive() {
         return isActive;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         isActive = active;
     }
 
-    public LocalDate getEnrollmentDate() {
-        return enrollmentDate;
+    public String getLinkedInProfileURL() {
+        return linkedInProfileURL;
     }
 
-    public void setEnrollmentDate(LocalDate enrollmentDate) {
-        this.enrollmentDate = enrollmentDate;
+    public void setLinkedInProfileURL(String linkedInProfileURL) {
+        this.linkedInProfileURL = linkedInProfileURL;
     }
 }

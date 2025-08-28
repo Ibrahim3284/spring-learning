@@ -41,4 +41,9 @@ public class UserService {
         User user1 = repo.findByUsername(user.getUsername());
         return new ResponseEntity<>(user1.getRole().equals("admin"), HttpStatus.OK);
     }
+
+    public ResponseEntity<Boolean> isFaculty(UserWrapper user) {
+        User user1 = repo.findByUsername(user.getUsername());
+        return new ResponseEntity<>(user1.getRole().equals("faculty"), HttpStatus.OK);
+    }
 }

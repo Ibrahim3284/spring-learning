@@ -19,6 +19,21 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
+    @PostMapping("addMultiple")
+    public ResponseEntity<?> addMultipleStudents(@RequestHeader("Authorization") String token, @Valid @RequestBody List<Student> students, BindingResult result) {
+        if (result.hasErrors()) {
+            String firstError = result.getFieldErrors()
+                    .stream()
+                    .findFirst()
+                    .map(error -> error.getDefaultMessage()) // ✅ only the exact message
+                    .orElse("Invalid input");
+
+            return new ResponseEntity<>(firstError, HttpStatus.BAD_REQUEST);
+        }
+
+        return studentService.addMultipleStudents(token, students);
+    }
+
     @PostMapping("add")
     public ResponseEntity<?> addStudent(@RequestHeader("Authorization") String token, @Valid @RequestBody Student student, BindingResult result) {
         if (result.hasErrors()) {
@@ -72,5 +87,10 @@ public class StudentController {
     @DeleteMapping("{id}")
     public ResponseEntity<String> deleteStudentById(@RequestHeader("Authorization") String token, @PathVariable("id") Integer id) {
         return studentService.deleteStudentById(token, id);
+    }
+
+    @GetMapping("getStudentDetails")
+    public ResponseEntity<?> getStudentDetails(@RequestHeader("Authorization") String token) {
+        return studentService.getStudentDetails(token);
     }
 }

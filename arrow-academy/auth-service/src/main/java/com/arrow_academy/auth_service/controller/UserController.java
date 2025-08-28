@@ -55,4 +55,10 @@ public class UserController {
 
         return service.isAdmin(user);
     }
+
+    @PostMapping("isFaculty")
+    public ResponseEntity<Boolean> isFaculty(@RequestBody UserWrapper user) {
+
+        return service.isFaculty(user);
+    }
 }
