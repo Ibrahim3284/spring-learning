@@ -9,13 +9,10 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,45 +22,25 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-
-//    private static final String SECRET = "xyz";
-
     @Autowired
     private UserRepo repo;
 
-    private String secretKey = "123a";
+    @Value("${jwt.secret}")
+    private String secretKey;
 
-    public JwtService() {
-        secretKey = generateSecretKey();
-    }
-
-    public String generateSecretKey() {
-//        try{
-//            KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-//            SecretKey secretKey = keyGenerator.generateKey();
-//            System.out.println("Secret key: " + secretKey.toString());
-//            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
-//        } catch (NoSuchAlgorithmException e) {
-//            throw new RuntimeException("Error generating secret key", e);
-//        }
-        SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256); // 256-bit key
-        String base64EncodedKey = java.util.Base64.getEncoder().encodeToString(key.getEncoded());
-        System.out.println(base64EncodedKey);
-        return base64EncodedKey;
-    }
-
-    public String generateToken(UserWrapper user){
-
+    public String generateToken(UserWrapper user) {
         Map<String, Object> claims = new HashMap<>();
         User currUser = repo.findByUsername(user.getUsername());
         String role = currUser.getRole();
         claims.put("role", role);
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000*60*120))
-                .signWith(getKey(), SignatureAlgorithm.HS256).compact();
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 120)) // 120 min
+                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     private Key getKey() {
@@ -72,7 +49,6 @@ public class JwtService {
     }
 
     public String extractUserName(String token) {
-        // extract the username from jwt token
         return extractClaim(token, Claims::getSubject);
     }
 
@@ -86,7 +62,6 @@ public class JwtService {
                 .setSigningKey(getKey())
                 .build().parseClaimsJws(token).getBody();
     }
-
 
     public boolean validateToken(String token, UserDetails userDetails) {
         final String userName = extractUserName(token);
