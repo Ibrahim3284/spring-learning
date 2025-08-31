@@ -93,4 +93,9 @@ public class StudentController {
     public ResponseEntity<?> getStudentDetails(@RequestHeader("Authorization") String token) {
         return studentService.getStudentDetails(token);
     }
+
+    @GetMapping("getStudentId")
+    public ResponseEntity<Integer> getStudentId(@RequestHeader("Authorization") String token) {
+        return studentService.getStudentId(token);
+    }
 }

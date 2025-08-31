@@ -146,4 +146,17 @@ public class StudentService {
         if(students.isPresent()) return new ResponseEntity<>(students.get(), HttpStatus.OK);
         else return new ResponseEntity<>("Student not present with email: " + username, HttpStatus.NOT_FOUND);
     }
+
+    public ResponseEntity<Integer> getStudentId(String token) {
+
+        String email = String.valueOf(jwtService.parseTokenAsJSON(token).get("sub"));
+
+        Optional<Student> studentDetail = studentDao.findByEmail(email);
+
+        if(studentDetail.isPresent()) {
+            int studentId;
+            studentId = studentDetail.get().getId();
+            return new ResponseEntity<>(studentId, HttpStatus.OK);
+        } else return new ResponseEntity<>(null, HttpStatus.OK);
+    }
 }

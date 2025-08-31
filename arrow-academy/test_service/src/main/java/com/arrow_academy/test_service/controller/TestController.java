@@ -1,16 +1,17 @@
 package com.arrow_academy.test_service.controller;
 
-import com.arrow_academy.test_service.model.Question;
-import com.arrow_academy.test_service.model.QuestionWrapper;
-import com.arrow_academy.test_service.model.Test;
-import com.arrow_academy.test_service.model.TestWrapper;
+import com.arrow_academy.test_service.model.*;
 import com.arrow_academy.test_service.service.TestService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.sql.Timestamp;
+import java.text.ParseException;
 import java.util.List;
 
 @RestController
@@ -20,8 +21,8 @@ public class TestController {
     private TestService testService;
 
     @PostMapping("add")
-    public ResponseEntity<String> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam String subject, @RequestPart List<Question> questionList, @RequestPart List<MultipartFile> imageFiles) throws IOException {
-        return testService.addTest(token, title, subject, questionList, imageFiles);
+    public ResponseEntity<String> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam String subject, @RequestParam("start_time") String startTime, @RequestParam("duration") int duration, @RequestPart List<Question> questionList, @RequestPart List<MultipartFile> imageFiles) throws IOException, ParseException {
+        return testService.addTest(token, title, subject, startTime, duration, questionList, imageFiles);
     }
 
     @GetMapping("get")
@@ -37,5 +38,10 @@ public class TestController {
     @GetMapping("get/{id}")
     public ResponseEntity<?> getAllQuestionsForATest(@RequestHeader("Authorization") String token, @PathVariable("id") int id){
         return testService.getAllQuestionsForATest(token, id);
+    }
+
+    @PostMapping("submit/{id}")
+    public ResponseEntity<?> submitTest(@PathVariable("id") int id, @RequestHeader("Authorization") String token, @RequestBody List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
+        return testService.submitTest(id, token, responses);
     }
 }

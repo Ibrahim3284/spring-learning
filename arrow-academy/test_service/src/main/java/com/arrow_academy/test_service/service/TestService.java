@@ -1,21 +1,24 @@
 package com.arrow_academy.test_service.service;
 
 import com.arrow_academy.test_service.dao.QuestionDao;
+import com.arrow_academy.test_service.dao.StudentTestDao;
 import com.arrow_academy.test_service.dao.TestDao;
-import com.arrow_academy.test_service.model.Question;
-import com.arrow_academy.test_service.model.QuestionWrapper;
-import com.arrow_academy.test_service.model.Test;
-import com.arrow_academy.test_service.model.TestWrapper;
+import com.arrow_academy.test_service.feign.UserInterface;
+import com.arrow_academy.test_service.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URISyntaxException;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class TestService {
@@ -28,7 +31,13 @@ public class TestService {
     @Autowired
     private JwtService jwtService;
 
-    public ResponseEntity<String> addTest(String token, String title, String subject, List<Question> questionList, List<MultipartFile> imageFiles) throws IOException {
+    @Autowired
+    private StudentTestDao studentTestDao;
+
+    @Autowired
+    private UserInterface userInterface;
+
+    public ResponseEntity<String> addTest(String token, String title, String subject, String startTime, int duration, List<Question> questionList, List<MultipartFile> imageFiles) throws IOException, ParseException {
 
         if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
             int i = 0;
@@ -44,6 +53,11 @@ public class TestService {
             Test test = new Test();
             test.setSubjectName(subject);
             test.setTestTitle(title);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            Date parsedDate = sdf.parse(startTime);
+            Timestamp timestamp = new Timestamp(parsedDate.getTime());
+            test.setStart_time(timestamp);
+            test.setDuration(duration);
 
             List<Integer> questionIds = new ArrayList<>();
             for (Question question : questionsAdded) {
@@ -112,5 +126,31 @@ public class TestService {
 
             return new ResponseEntity<>(questions, HttpStatus.OK);
         } else return new ResponseEntity<>("Test can be seen by faculties", HttpStatus.UNAUTHORIZED);
+    }
+
+    public ResponseEntity<?> submitTest(Integer id, String token, List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
+
+        int studentId = userInterface.getStudentId(token).getBody();
+
+        StudentTest studentTest = new StudentTest();
+        studentTest.setStudentId(studentId);
+        studentTest.setTestId(id);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Map<String, String> responsesMap = new HashMap<>();
+        for (Response response : responses) {
+            responsesMap.put(
+                    String.valueOf(response.getQuestionId()),
+                    String.valueOf(response.getOptionSelected())
+            );
+        }
+
+        // Convert to JSON string
+        String jsonString = mapper.writeValueAsString(responsesMap);
+        studentTest.setResponses(jsonString);
+
+        studentTestDao.save(studentTest);
+        return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
     }
 }

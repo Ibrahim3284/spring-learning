@@ -2,6 +2,7 @@ package com.arrow_academy.test_service.model;
 
 import jakarta.persistence.*;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
@@ -18,6 +19,8 @@ public class Test {
     private int id;
     private String testTitle;
     private String subjectName;
+    private Timestamp start_time;
+    private int duration;
     @ElementCollection
     private List<Integer> questionIds;
 
@@ -51,5 +54,21 @@ public class Test {
 
     public void setSubjectName(String subjectName) {
         this.subjectName = subjectName;
+    }
+
+    public Timestamp getStart_time() {
+        return start_time;
+    }
+
+    public void setStart_time(Timestamp start_time) {
+        this.start_time = start_time;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 }

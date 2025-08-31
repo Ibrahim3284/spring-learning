@@ -35,13 +35,13 @@ public class UserController {
     }
 
     @PostMapping("login")
-    public String login(@RequestBody UserWrapper user) {
+    public ResponseEntity<String> login(@RequestBody UserWrapper user) {
 
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
-        if(authentication.isAuthenticated()) return jwtService.generateToken(user);
-        else return "Login failed";
+        if(authentication.isAuthenticated()) return new ResponseEntity<>(jwtService.generateToken(user), HttpStatus.OK);
+        else return new ResponseEntity<>("Login failed", HttpStatus.UNAUTHORIZED);
     }
 
     @PostMapping("isStudent")

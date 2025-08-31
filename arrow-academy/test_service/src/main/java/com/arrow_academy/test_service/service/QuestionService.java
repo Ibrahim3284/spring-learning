@@ -3,7 +3,6 @@ package com.arrow_academy.test_service.service;
 import com.arrow_academy.test_service.dao.QuestionDao;
 import com.arrow_academy.test_service.model.Question;
 import com.arrow_academy.test_service.model.QuestionWrapper;
-import org.bouncycastle.util.encoders.Base64Encoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
