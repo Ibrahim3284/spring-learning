@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
@@ -15,7 +16,8 @@ public class StudentTest {
 
     private int studentId;
     private int testId;
-    private int start_time;
+    private Timestamp start_time;
+    private Timestamp end_time;
 
     @Lob
     @Column(columnDefinition = "TEXT")
@@ -37,11 +39,11 @@ public class StudentTest {
         this.testId = testId;
     }
 
-    public int getStart_time() {
+    public Timestamp getStart_time() {
         return start_time;
     }
 
-    public void setStart_time(int start_time) {
+    public void setStart_time(Timestamp start_time) {
         this.start_time = start_time;
     }
 
@@ -51,5 +53,13 @@ public class StudentTest {
 
     public void setResponses(String responses) {
         this.responses = responses;
+    }
+
+    public Timestamp getEnd_time() {
+        return end_time;
+    }
+
+    public void setEnd_time(Timestamp end_time) {
+        this.end_time = end_time;
     }
 }

@@ -5,6 +5,8 @@ import com.arrow_academy.test_service.dao.StudentTestDao;
 import com.arrow_academy.test_service.dao.TestDao;
 import com.arrow_academy.test_service.feign.UserInterface;
 import com.arrow_academy.test_service.model.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.hibernate.annotations.CurrentTimestamp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,9 @@ import java.net.URISyntaxException;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -96,7 +101,7 @@ public class TestService {
     }
 
     public ResponseEntity<?> getAllTests(String token) {
-        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
+        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty") || jwtService.parseTokenAsJSON(token).get("role").equals("student")) {
             List<Test> tests = testDao.findAll();
             List<TestWrapper> testWrappers = new ArrayList<>();
 
@@ -128,11 +133,33 @@ public class TestService {
         } else return new ResponseEntity<>("Test can be seen by faculties", HttpStatus.UNAUTHORIZED);
     }
 
+    public ResponseEntity<?> getAllQuestionsWrappersForATest(String token, int id) {
+            Test test = testDao.findById(id).get();
+            List<QuestionWrapper> questionWrappers = new ArrayList<>();
+            List<Integer> questionIds = test.getQuestionIds();
+
+            for(int questionId : questionIds) {
+                Question question = questionDao.findById(questionId).get();
+
+                QuestionWrapper questionWrapper = new QuestionWrapper();
+                questionWrapper.setId(question.getId());
+                questionWrapper.setQuestion(question.getQuestionImageData());
+                questionWrapper.setOption1(question.getOption1());
+                questionWrapper.setOption2(question.getOption2());
+                questionWrapper.setOption3(question.getOption3());
+                questionWrapper.setOption4(question.getOption4());
+
+                questionWrappers.add(questionWrapper);
+            }
+
+            return new ResponseEntity<>(questionWrappers, HttpStatus.OK);
+    }
+
     public ResponseEntity<?> submitTest(Integer id, String token, List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
 
         int studentId = userInterface.getStudentId(token).getBody();
 
-        StudentTest studentTest = new StudentTest();
+        StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
         studentTest.setStudentId(studentId);
         studentTest.setTestId(id);
 
@@ -141,8 +168,8 @@ public class TestService {
         Map<String, String> responsesMap = new HashMap<>();
         for (Response response : responses) {
             responsesMap.put(
-                    String.valueOf(response.getQuestionId()),
-                    String.valueOf(response.getOptionSelected())
+                    response.getQuestionId().toString(),
+                    response.getOptionSelected()
             );
         }
 
@@ -152,5 +179,89 @@ public class TestService {
 
         studentTestDao.save(studentTest);
         return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
+    }
+
+    public ResponseEntity<?> attemptQuestionsOfATest(String token, int id) {
+        try {
+            int sid = Integer.parseInt(String.valueOf(userInterface.getStudentId(token).getBody()));
+
+            Optional<StudentTest> studentTestDetails = studentTestDao.findByStudentIdAndTestId(sid, id);
+
+            if(studentTestDetails.isEmpty()) {
+                Test test = testDao.findById(id).orElseThrow(() -> new RuntimeException("Test not found"));
+
+                Timestamp testStartTime = test.getStart_time();
+                int windowSeconds = test.getWindow();
+                int durationSeconds = test.getDuration();
+
+                Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+
+                LocalDateTime startTime = testStartTime.toLocalDateTime();
+                LocalDateTime maxStartTime = startTime.plusSeconds(windowSeconds);
+                LocalDateTime maxEndTime = startTime.plusSeconds(windowSeconds + durationSeconds);
+
+                StudentTest studentTest = new StudentTest();
+                studentTest.setStudentId(sid);
+                studentTest.setTestId(id);
+
+                if (currentTimestamp.before(testStartTime)) {
+                    return new ResponseEntity<>("Test did not start yet.", HttpStatus.BAD_REQUEST);
+                }
+
+                if (currentTimestamp.after(Timestamp.valueOf(maxEndTime))) {
+                    return new ResponseEntity<>("Test is completed.", HttpStatus.BAD_REQUEST);
+                }
+
+                // Determine actual start time
+                Timestamp actualStartTime;
+                Timestamp actualEndTime;
+                if (currentTimestamp.before(Timestamp.valueOf(maxStartTime))) {
+                    actualStartTime = currentTimestamp;
+                } else {
+                    actualStartTime = Timestamp.valueOf(maxStartTime);
+                }
+                actualEndTime = Timestamp.valueOf(actualStartTime.toLocalDateTime().plusSeconds(durationSeconds));
+
+                studentTest.setStart_time(actualStartTime);
+                studentTest.setEnd_time(actualEndTime);
+                studentTestDao.save(studentTest);
+
+                return getAllQuestionsWrappersForATest(token, id);
+            } else {
+                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time()))
+                    return getAllQuestionsWrappersForATest(token, id);
+                else
+                    return new ResponseEntity<>("Test is completed", HttpStatus.BAD_REQUEST);
+            }
+
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error attempting test with message: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<?> saveTest(int id, String token, List<Response> responses) throws JsonProcessingException {
+        int studentId = userInterface.getStudentId(token).getBody();
+
+        StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
+        studentTest.setStudentId(studentId);
+        studentTest.setTestId(id);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Map<String, String> responsesMap = new HashMap<>();
+        for (Response response : responses) {
+            responsesMap.put(
+                    response.getQuestionId().toString(),
+                    response.getOptionSelected()
+            );
+        }
+
+        // Convert to JSON string
+        String jsonString = mapper.writeValueAsString(responsesMap);
+        studentTest.setResponses(jsonString);
+
+        studentTestDao.save(studentTest);
+        return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
     }
 }

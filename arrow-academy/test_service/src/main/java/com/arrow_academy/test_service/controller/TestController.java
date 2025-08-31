@@ -40,7 +40,22 @@ public class TestController {
         return testService.getAllQuestionsForATest(token, id);
     }
 
-    @PostMapping("submit/{id}")
+    @GetMapping("get/questionWrapper/{id}")
+    public ResponseEntity<?> getAllQuestionWrappersForATest(@RequestHeader("Authorization") String token, @PathVariable("id") int id) {
+        return testService.getAllQuestionsWrappersForATest(token, id);
+    }
+
+    @PostMapping("attempt/{id}")
+    public ResponseEntity<?> attemptQuestionsOfATest(@RequestHeader("Authorization") String token, @PathVariable("id") int id) {
+        return testService.attemptQuestionsOfATest(token, id);
+    }
+
+    @PutMapping("save/{id}")
+    public ResponseEntity<?> saveTest(@PathVariable("id") int id, @RequestHeader("Authorization") String token, @RequestBody List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
+        return testService.saveTest(id, token, responses);
+    }
+
+    @PutMapping("submit/{id}")
     public ResponseEntity<?> submitTest(@PathVariable("id") int id, @RequestHeader("Authorization") String token, @RequestBody List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
         return testService.submitTest(id, token, responses);
     }

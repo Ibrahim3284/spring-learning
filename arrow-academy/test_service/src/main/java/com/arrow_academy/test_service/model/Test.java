@@ -21,6 +21,7 @@ public class Test {
     private String subjectName;
     private Timestamp start_time;
     private int duration;
+    private int window;
     @ElementCollection
     private List<Integer> questionIds;
 
@@ -70,5 +71,13 @@ public class Test {
 
     public void setDuration(int duration) {
         this.duration = duration;
+    }
+
+    public int getWindow() {
+        return window;
+    }
+
+    public void setWindow(int window) {
+        this.window = window;
     }
 }
