@@ -42,7 +42,7 @@ public class TestService {
     @Autowired
     private UserInterface userInterface;
 
-    public ResponseEntity<String> addTest(String token, String title, String subject, String startTime, int duration, List<Question> questionList, List<MultipartFile> imageFiles) throws IOException, ParseException {
+    public ResponseEntity<String> addTest(String token, String title, String subject, String startTime, int duration, int testWindow, List<Question> questionList, List<MultipartFile> imageFiles) throws IOException, ParseException {
 
         if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
             int i = 0;
@@ -63,6 +63,7 @@ public class TestService {
             Timestamp timestamp = new Timestamp(parsedDate.getTime());
             test.setStart_time(timestamp);
             test.setDuration(duration);
+            test.setTestWindow(testWindow);
 
             List<Integer> questionIds = new ArrayList<>();
             for (Question question : questionsAdded) {
@@ -160,25 +161,29 @@ public class TestService {
         int studentId = userInterface.getStudentId(token).getBody();
 
         StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
-        studentTest.setStudentId(studentId);
-        studentTest.setTestId(id);
 
-        ObjectMapper mapper = new ObjectMapper();
+        if(!studentTest.isAttempted()) {
+            studentTest.setStudentId(studentId);
+            studentTest.setTestId(id);
+            studentTest.setAttempted(true);
 
-        Map<String, String> responsesMap = new HashMap<>();
-        for (Response response : responses) {
-            responsesMap.put(
-                    response.getQuestionId().toString(),
-                    response.getOptionSelected()
-            );
-        }
+            ObjectMapper mapper = new ObjectMapper();
 
-        // Convert to JSON string
-        String jsonString = mapper.writeValueAsString(responsesMap);
-        studentTest.setResponses(jsonString);
+            Map<String, String> responsesMap = new HashMap<>();
+            for (Response response : responses) {
+                responsesMap.put(
+                        response.getQuestionId().toString(),
+                        response.getOptionSelected()
+                );
+            }
 
-        studentTestDao.save(studentTest);
-        return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
+            // Convert to JSON string
+            String jsonString = mapper.writeValueAsString(responsesMap);
+            studentTest.setResponses(jsonString);
+
+            studentTestDao.save(studentTest);
+            return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
+        } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
     }
 
     public ResponseEntity<?> attemptQuestionsOfATest(String token, int id) {
@@ -191,7 +196,7 @@ public class TestService {
                 Test test = testDao.findById(id).orElseThrow(() -> new RuntimeException("Test not found"));
 
                 Timestamp testStartTime = test.getStart_time();
-                int windowSeconds = test.getWindow();
+                int windowSeconds = test.getTestWindow();
                 int durationSeconds = test.getDuration();
 
                 Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
@@ -228,8 +233,10 @@ public class TestService {
 
                 return getAllQuestionsWrappersForATest(token, id);
             } else {
-                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time()))
-                    return getAllQuestionsWrappersForATest(token, id);
+                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time())) {
+                    if(studentTestDetails.get().isAttempted()) return new ResponseEntity<>("You have already attempted this test.", HttpStatus.BAD_REQUEST);
+                    else return getAllQuestionsWrappersForATest(token, id);
+                }
                 else
                     return new ResponseEntity<>("Test is completed", HttpStatus.BAD_REQUEST);
             }
@@ -244,24 +251,27 @@ public class TestService {
         int studentId = userInterface.getStudentId(token).getBody();
 
         StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
-        studentTest.setStudentId(studentId);
-        studentTest.setTestId(id);
 
-        ObjectMapper mapper = new ObjectMapper();
+        if(!studentTest.isAttempted()) {
+            studentTest.setStudentId(studentId);
+            studentTest.setTestId(id);
 
-        Map<String, String> responsesMap = new HashMap<>();
-        for (Response response : responses) {
-            responsesMap.put(
-                    response.getQuestionId().toString(),
-                    response.getOptionSelected()
-            );
-        }
+            ObjectMapper mapper = new ObjectMapper();
 
-        // Convert to JSON string
-        String jsonString = mapper.writeValueAsString(responsesMap);
-        studentTest.setResponses(jsonString);
+            Map<String, String> responsesMap = new HashMap<>();
+            for (Response response : responses) {
+                responsesMap.put(
+                        response.getQuestionId().toString(),
+                        response.getOptionSelected()
+                );
+            }
 
-        studentTestDao.save(studentTest);
-        return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
+            // Convert to JSON string
+            String jsonString = mapper.writeValueAsString(responsesMap);
+            studentTest.setResponses(jsonString);
+
+            studentTestDao.save(studentTest);
+            return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
+        } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
     }
 }

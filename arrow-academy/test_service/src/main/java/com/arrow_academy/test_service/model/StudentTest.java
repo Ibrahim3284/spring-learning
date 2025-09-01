@@ -19,7 +19,8 @@ public class StudentTest {
     private Timestamp start_time;
     private Timestamp end_time;
 
-    @Lob
+    private boolean isAttempted;
+
     @Column(columnDefinition = "TEXT")
     private String responses;
 
@@ -61,5 +62,13 @@ public class StudentTest {
 
     public void setEnd_time(Timestamp end_time) {
         this.end_time = end_time;
+    }
+
+    public boolean isAttempted() {
+        return isAttempted;
+    }
+
+    public void setAttempted(boolean attempted) {
+        isAttempted = attempted;
     }
 }

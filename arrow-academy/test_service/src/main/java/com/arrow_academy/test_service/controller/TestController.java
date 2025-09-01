@@ -21,8 +21,8 @@ public class TestController {
     private TestService testService;
 
     @PostMapping("add")
-    public ResponseEntity<String> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam String subject, @RequestParam("start_time") String startTime, @RequestParam("duration") int duration, @RequestPart List<Question> questionList, @RequestPart List<MultipartFile> imageFiles) throws IOException, ParseException {
-        return testService.addTest(token, title, subject, startTime, duration, questionList, imageFiles);
+    public ResponseEntity<String> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam String subject, @RequestParam("start_time") String startTime, @RequestParam("duration") int duration, @RequestParam("test_window") int testWindow, @RequestPart List<Question> questionList, @RequestPart List<MultipartFile> imageFiles) throws IOException, ParseException {
+        return testService.addTest(token, title, subject, startTime, duration, testWindow, questionList, imageFiles);
     }
 
     @GetMapping("get")

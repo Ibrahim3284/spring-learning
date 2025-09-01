@@ -21,7 +21,7 @@ public class Test {
     private String subjectName;
     private Timestamp start_time;
     private int duration;
-    private int window;
+    private int testWindow;
     @ElementCollection
     private List<Integer> questionIds;
 
@@ -73,11 +73,11 @@ public class Test {
         this.duration = duration;
     }
 
-    public int getWindow() {
-        return window;
+    public int getTestWindow() {
+        return testWindow;
     }
 
-    public void setWindow(int window) {
-        this.window = window;
+    public void setTestWindow(int testWindow) {
+        this.testWindow = testWindow;
     }
 }
