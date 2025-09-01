@@ -229,6 +229,7 @@ public class TestService {
 
                 studentTest.setStart_time(actualStartTime);
                 studentTest.setEnd_time(actualEndTime);
+                studentTest.setAttempted(false);
                 studentTestDao.save(studentTest);
 
                 return getAllQuestionsWrappersForATest(token, id);
