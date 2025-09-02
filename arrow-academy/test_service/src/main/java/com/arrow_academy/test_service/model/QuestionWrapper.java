@@ -3,6 +3,7 @@ package com.arrow_academy.test_service.model;
 public class QuestionWrapper {
 
     private int id;
+    private String questionTitle;
     private byte[] question;
     private String option1;
     private String option2;
@@ -55,5 +56,13 @@ public class QuestionWrapper {
 
     public void setOption4(String option4) {
         this.option4 = option4;
+    }
+
+    public String getQuestionTitle() {
+        return questionTitle;
+    }
+
+    public void setQuestionTitle(String questionTitle) {
+        this.questionTitle = questionTitle;
     }
 }

@@ -90,7 +90,8 @@ public class TestService {
                 Question question = questionDao.findById(questionId).get();
 
                 questionWrapper.setId(question.getId());
-                questionWrapper.setQuestion(question.getQuestionImageData());
+                if(question.getQuestionImageData() != null) questionWrapper.setQuestion(question.getQuestionImageData());
+                if(question.getQuestionTitle() != null) questionWrapper.setQuestionTitle(question.getQuestionTitle());
                 questionWrapper.setOption1(question.getOption1());
                 questionWrapper.setOption2(question.getOption2());
                 questionWrapper.setOption3(question.getOption3());
@@ -145,7 +146,8 @@ public class TestService {
 
                 QuestionWrapper questionWrapper = new QuestionWrapper();
                 questionWrapper.setId(question.getId());
-                questionWrapper.setQuestion(question.getQuestionImageData());
+                if(question.getQuestionTitle() != null) questionWrapper.setQuestionTitle(question.getQuestionTitle());
+                if(question.getQuestionImageData() != null) questionWrapper.setQuestion(question.getQuestionImageData());
                 questionWrapper.setOption1(question.getOption1());
                 questionWrapper.setOption2(question.getOption2());
                 questionWrapper.setOption3(question.getOption3());
