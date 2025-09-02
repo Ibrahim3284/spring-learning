@@ -47,11 +47,12 @@ public class TestService {
         if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
             int i = 0;
             for (Question question : questionList) {
-                question.setQuestionImageName(imageFiles.get(i).getOriginalFilename());
-                question.setQuestionImageType(imageFiles.get(i).getContentType());
-                question.setQuestionImageData(imageFiles.get(i).getBytes());
-
-                i++;
+                if(question.isHasImage()) {
+                    question.setQuestionImageName(imageFiles.get(i).getOriginalFilename());
+                    question.setQuestionImageType(imageFiles.get(i).getContentType());
+                    question.setQuestionImageData(imageFiles.get(i).getBytes());
+                    i++;
+                }
             }
             List<Question> questionsAdded = questionDao.saveAll(questionList);
 

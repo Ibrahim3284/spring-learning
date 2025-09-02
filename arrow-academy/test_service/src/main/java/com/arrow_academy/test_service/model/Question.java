@@ -9,6 +9,8 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @Column(columnDefinition = "TEXT")
+    private String questionTitle;
     private String questionImageName;
     private String questionImageType;
     @Lob
@@ -20,6 +22,7 @@ public class Question {
     private String rightOption;
     private String category;
     private String difficultyLevel;
+    private boolean hasImage;
 
     public int getId() {
         return id;
@@ -107,5 +110,21 @@ public class Question {
 
     public void setDifficultyLevel(String difficultyLevel) {
         this.difficultyLevel = difficultyLevel;
+    }
+
+    public String getQuestionTitle() {
+        return questionTitle;
+    }
+
+    public void setQuestionTitle(String questionTitle) {
+        this.questionTitle = questionTitle;
+    }
+
+    public boolean isHasImage() {
+        return hasImage;
+    }
+
+    public void setHasImage(boolean hasImage) {
+        this.hasImage = hasImage;
     }
 }
