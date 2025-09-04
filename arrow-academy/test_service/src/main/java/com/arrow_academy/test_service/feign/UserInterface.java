@@ -5,9 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-@FeignClient(name = "USER-SERVICE")
+@FeignClient(name = "USER-SERVICE", url = "${user.service.url}")
 public interface UserInterface {
 
-    @GetMapping("student/getStudentId")
+    @GetMapping("/student/getStudentId")
     public ResponseEntity<Integer> getStudentId(@RequestHeader("Authorization") String token);
 }
