@@ -3,16 +3,17 @@ package com.arrow_academy.auth_service.services;
 import com.arrow_academy.auth_service.dao.UserRepo;
 import com.arrow_academy.auth_service.model.User;
 import com.arrow_academy.auth_service.model.UserWrapper;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,5 +75,32 @@ public class JwtService {
 
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
+    }
+
+    public JSONObject parseTokenAsJSON(String token) {
+        try {
+            // Decode the Base64 key
+            byte[] decodedKey = Base64.getDecoder().decode(secretKey);
+            SecretKey key = Keys.hmacShaKeyFor(decodedKey);
+
+            // Parse the JWT
+            Jws<Claims> jwsClaims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
+
+            Claims claims = jwsClaims.getBody();
+
+            // Convert claims map to JSONObject
+            JSONObject json = new JSONObject();
+            for (Map.Entry<String, Object> entry : claims.entrySet()) {
+                json.put(entry.getKey(), entry.getValue());
+            }
+
+            return json;
+        } catch (JwtException e) {
+            System.out.println("Invalid token: " + e.getMessage());
+            return null;
+        }
     }
 }

@@ -19,6 +19,9 @@ public class UserService {
     @Autowired
     private UserRepo repo;
 
+    @Autowired
+    private JwtService jwtService;
+
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public int fetchUserCountByUsername(String username) {
@@ -28,13 +31,28 @@ public class UserService {
     @Transactional
     public ResponseEntity<String> createUser(User user) {
 
-        if(user.getRole().equals("admin")) return new ResponseEntity<>("Can't create admin user", HttpStatus.BAD_REQUEST);
+        if(!user.getRole().equals("normal_user")) return new ResponseEntity<>("Can't create user other than normal_user", HttpStatus.FORBIDDEN);
 
         if(!repo.findAllByUsername(user.getUsername()).isEmpty()) return updateUser(user);
 
         if(user.getPassword() != null) user.setPassword(encoder.encode(user.getPassword()));
         repo.save(user);
         return new ResponseEntity<>("User created", HttpStatus.CREATED);
+    }
+
+    @Transactional
+    public ResponseEntity<String> createUserByAdmin(String token, User user) {
+
+        if(jwtService.parseTokenAsJSON(token.substring(7)).get("role").equals("admin")) {
+            if (user.getRole().equals("admin"))
+                return new ResponseEntity<>("Can't create admin user", HttpStatus.FORBIDDEN);
+
+            if (!repo.findAllByUsername(user.getUsername()).isEmpty()) return updateUserByAdmin(token, user);
+
+            if (user.getPassword() != null) user.setPassword(encoder.encode(user.getPassword()));
+            repo.save(user);
+            return new ResponseEntity<>("User created", HttpStatus.CREATED);
+        } else return new ResponseEntity<>("Cant create user", HttpStatus.FORBIDDEN);
     }
 
     public ResponseEntity<Boolean> isStudent(UserWrapper user) {
@@ -61,10 +79,25 @@ public class UserService {
             else {
                 currUser.setPassword(encoder.encode(user.getPassword()));
             }
-        } else {
-            currUser.setRole(user.getRole());
         }
         repo.save(currUser);
         return new ResponseEntity<>("User updated successfully", HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> updateUserByAdmin(String token, User user) {
+        if(jwtService.parseTokenAsJSON(token.substring(7)).get("role").equals("admin")) {
+            User currUser = repo.findByUsername(user.getUsername());
+            if (user.getPassword() != null) {
+                if (currUser.getPassword() != null)
+                    return new ResponseEntity<>("Password is already set", HttpStatus.OK);
+                else {
+                    currUser.setPassword(encoder.encode(user.getPassword()));
+                }
+            } else {
+                currUser.setRole(user.getRole());
+            }
+            repo.save(currUser);
+            return new ResponseEntity<>("User updated successfully", HttpStatus.OK);
+        } else return new ResponseEntity<>("Cant update user", HttpStatus.FORBIDDEN);
     }
 }

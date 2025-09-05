@@ -51,7 +51,7 @@ public class FacultyService {
                 User user = new User();
                 user.setUsername(faculty.getEmail());
                 user.setRole("faculty");
-                authInterface.adminRegister(user);
+                authInterface.adminRegister("Bearer " + token, user);
 
                 facultyDao.save(faculty);
                 return new ResponseEntity<>("Faculty added successfully", HttpStatus.CREATED);

@@ -50,7 +50,7 @@ public class StudentService {
                 User user = new User();
                 user.setUsername(student.getEmail());
                 user.setRole("student");
-                authInterface.adminRegister(user);
+                authInterface.adminRegister("Bearer " + token, user);
                 studentDao.save(student);
                 return new ResponseEntity<>("Student added successfully", HttpStatus.CREATED);
             }

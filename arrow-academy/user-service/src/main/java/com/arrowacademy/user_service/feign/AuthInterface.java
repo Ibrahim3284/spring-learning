@@ -6,10 +6,11 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @FeignClient(name = "AUTH-SERVICE", url = "${auth.service.url}" )
 public interface AuthInterface {
 
     @PostMapping("/admin/register")
-    public ResponseEntity<String> adminRegister(@Valid @RequestBody User user);
+    public ResponseEntity<String> adminRegister(@RequestHeader("Authorization") String token, @Valid @RequestBody User user);
 }
