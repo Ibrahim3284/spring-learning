@@ -31,7 +31,17 @@ public class UserController {
         if (result.hasErrors()) {
             return new ResponseEntity<>(result.getAllErrors().get(0).getDefaultMessage(), HttpStatus.BAD_REQUEST);
         }
-        return service.saveUser(user);
+        return service.createUser(user);
+    }
+
+    @PostMapping("admin/register")
+    public ResponseEntity<String> adminRegister(@Valid @RequestBody User user, BindingResult result) {
+        if (result.hasErrors()) {
+            return new ResponseEntity<>(result.getAllErrors().get(0).getDefaultMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        if(service.fetchUserCountByUsername(user.getUsername()) == 0) return service.createUser(user);
+        else return service.updateUser(user);
     }
 
     @PostMapping("login")

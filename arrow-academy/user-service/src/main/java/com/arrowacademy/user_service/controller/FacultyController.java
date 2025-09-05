@@ -1,7 +1,9 @@
 package com.arrowacademy.user_service.controller;
 
+import com.arrowacademy.user_service.feign.AuthInterface;
 import com.arrowacademy.user_service.model.Faculty;
 import com.arrowacademy.user_service.model.Student;
+import com.arrowacademy.user_service.model.User;
 import com.arrowacademy.user_service.service.FacultyService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,8 +1,10 @@
 package com.arrowacademy.user_service.service;
 
 import com.arrowacademy.user_service.dao.StudentDao;
+import com.arrowacademy.user_service.feign.AuthInterface;
 import com.arrowacademy.user_service.model.Faculty;
 import com.arrowacademy.user_service.model.Student;
+import com.arrowacademy.user_service.model.User;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,9 @@ public class StudentService {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private AuthInterface authInterface;
+
     public ResponseEntity<String> addStudent(String token, Student student) {
 
         if(jwtService.parseTokenAsJSON(token).get("role").equals("admin")) {
@@ -42,6 +47,10 @@ public class StudentService {
                 } catch (Exception e) {
                     return new ResponseEntity<>("Enrollment date format is incorrect. Please pass in yyyy-MM-dd format", HttpStatus.BAD_REQUEST);
                 }
+                User user = new User();
+                user.setUsername(student.getEmail());
+                user.setRole("student");
+                authInterface.adminRegister(user);
                 studentDao.save(student);
                 return new ResponseEntity<>("Student added successfully", HttpStatus.CREATED);
             }

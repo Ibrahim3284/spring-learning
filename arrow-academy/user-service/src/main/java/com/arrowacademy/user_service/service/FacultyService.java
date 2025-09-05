@@ -2,8 +2,10 @@ package com.arrowacademy.user_service.service;
 
 import com.arrowacademy.user_service.dao.FacultyDao;
 import com.arrowacademy.user_service.dao.StudentDao;
+import com.arrowacademy.user_service.feign.AuthInterface;
 import com.arrowacademy.user_service.model.Faculty;
 import com.arrowacademy.user_service.model.Student;
+import com.arrowacademy.user_service.model.User;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,9 @@ public class FacultyService {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private AuthInterface authInterface;
+
     public ResponseEntity<String> addFaculty(String token, Faculty faculty) {
 
         if(jwtService.parseTokenAsJSON(token).get("role").equals("admin")) {
@@ -43,6 +48,11 @@ public class FacultyService {
                 } catch (Exception e) {
                     return new ResponseEntity<>("Date of joining format is incorrect. Please pass in yyyy-MM-dd format", HttpStatus.BAD_REQUEST);
                 }
+                User user = new User();
+                user.setUsername(faculty.getEmail());
+                user.setRole("faculty");
+                authInterface.adminRegister(user);
+
                 facultyDao.save(faculty);
                 return new ResponseEntity<>("Faculty added successfully", HttpStatus.CREATED);
             }
