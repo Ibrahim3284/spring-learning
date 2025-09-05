@@ -2,6 +2,7 @@ package com.arrow_academy.auth_service.controller;
 
 import com.arrow_academy.auth_service.model.ResetPassword;
 import com.arrow_academy.auth_service.model.User;
+import com.arrow_academy.auth_service.model.UserDto;
 import com.arrow_academy.auth_service.model.UserWrapper;
 import com.arrow_academy.auth_service.services.JwtService;
 import com.arrow_academy.auth_service.services.PasswordResetService;
@@ -32,11 +33,11 @@ public class UserController {
     private PasswordResetService passwordResetService;
 
     @PostMapping("register")
-    public ResponseEntity<String> register(@Valid @RequestBody User user, BindingResult result) {
+    public ResponseEntity<String> register(@Valid @RequestBody UserDto userDto, BindingResult result) {
         if (result.hasErrors()) {
             return new ResponseEntity<>(result.getAllErrors().get(0).getDefaultMessage(), HttpStatus.BAD_REQUEST);
         }
-        return service.createUser(user);
+        return service.createUser(userDto);
     }
 
     @PostMapping("admin/register")

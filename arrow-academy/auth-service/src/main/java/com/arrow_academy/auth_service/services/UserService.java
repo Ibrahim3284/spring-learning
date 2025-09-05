@@ -2,6 +2,7 @@ package com.arrow_academy.auth_service.services;
 
 import com.arrow_academy.auth_service.model.User;
 import com.arrow_academy.auth_service.dao.UserRepo;
+import com.arrow_academy.auth_service.model.UserDto;
 import com.arrow_academy.auth_service.model.UserWrapper;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -29,13 +30,20 @@ public class UserService {
     }
 
     @Transactional
-    public ResponseEntity<String> createUser(User user) {
+    public ResponseEntity<String> createUser(UserDto userDto) {
 
-        if(!user.getRole().equals("normal_user")) return new ResponseEntity<>("Can't create user other than normal_user", HttpStatus.FORBIDDEN);
+        if(!userDto.getRole().equals("normal_user")) return new ResponseEntity<>("Can't create user other than normal_user", HttpStatus.FORBIDDEN);
 
-        if(!repo.findAllByUsername(user.getUsername()).isEmpty()) return updateUser(user);
+        if(!userDto.getConfirmPassword().equals(userDto.getPassword())) return new ResponseEntity<>("Confirm password and passwords field dont match", HttpStatus.BAD_REQUEST);
+        if(!repo.findAllByUsername(userDto.getUsername()).isEmpty()) {
+            User user = repo.findByUsername(userDto.getUsername());
+            return updateUser(user);
+        }
 
-        if(user.getPassword() != null) user.setPassword(encoder.encode(user.getPassword()));
+        User user = new User();
+        user.setUsername(userDto.getUsername());
+        user.setPassword(encoder.encode(userDto.getPassword()));
+        user.setRole(userDto.getRole());
         repo.save(user);
         return new ResponseEntity<>("User created", HttpStatus.CREATED);
     }
