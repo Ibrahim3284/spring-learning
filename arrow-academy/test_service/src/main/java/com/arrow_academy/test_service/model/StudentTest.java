@@ -15,7 +15,7 @@ public class StudentTest {
     private int id;
 
     private int studentId;
-    private int testId;
+    private int testDetailsId;
     private Timestamp start_time;
     private Timestamp end_time;
 
@@ -32,12 +32,12 @@ public class StudentTest {
         this.studentId = studentId;
     }
 
-    public int getTestId() {
-        return testId;
+    public int getTestDetailsId() {
+        return testDetailsId;
     }
 
-    public void setTestId(int testId) {
-        this.testId = testId;
+    public void setTestDetailsId(int testDetailsId) {
+        this.testDetailsId = testDetailsId;
     }
 
     public Timestamp getStart_time() {

@@ -36,8 +36,8 @@ public class UserService {
 
         if(!userDto.getConfirmPassword().equals(userDto.getPassword())) return new ResponseEntity<>("Confirm password and passwords field dont match", HttpStatus.BAD_REQUEST);
         if(!repo.findAllByUsername(userDto.getUsername()).isEmpty()) {
-            User user = repo.findByUsername(userDto.getUsername());
-            return updateUser(user);
+//            User user = repo.findByUsername(userDto.getUsername());
+            return updateUser(userDto);
         }
 
         User user = new User();
@@ -80,12 +80,13 @@ public class UserService {
         return new ResponseEntity<>(user1.getRole().equals("faculty"), HttpStatus.OK);
     }
 
-    public ResponseEntity<String> updateUser(User user) {
-        User currUser = repo.findByUsername(user.getUsername());
-        if(user.getPassword() != null) {
+    public ResponseEntity<String> updateUser(UserDto userDto) {
+        User currUser = repo.findByUsername(userDto.getUsername());
+        if(userDto.getPassword() != null) {
             if(currUser.getPassword() != null) return new ResponseEntity<>("Password is already set", HttpStatus.OK);
             else {
-                currUser.setPassword(encoder.encode(user.getPassword()));
+                if(userDto.getPassword().equals(userDto.getConfirmPassword())) currUser.setPassword(encoder.encode(userDto.getPassword()));
+                else return new ResponseEntity<>("Passwords dont match", HttpStatus.BAD_REQUEST);
             }
         }
         repo.save(currUser);

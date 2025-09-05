@@ -1,6 +1,5 @@
 package com.arrow_academy.test_service.controller;
 
-import com.arrow_academy.test_service.dao.QuestionDao;
 import com.arrow_academy.test_service.model.Question;
 import com.arrow_academy.test_service.model.QuestionWrapper;
 import com.arrow_academy.test_service.service.QuestionService;

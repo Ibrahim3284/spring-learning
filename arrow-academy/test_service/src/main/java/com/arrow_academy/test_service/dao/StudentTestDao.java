@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface StudentTestDao extends JpaRepository<StudentTest, Integer> {
 
-    Optional<StudentTest> findByStudentIdAndTestId(Integer sid, Integer tid);
+    Optional<StudentTest> findByStudentIdAndTestDetailsId(Integer sid, Integer tid);
 }

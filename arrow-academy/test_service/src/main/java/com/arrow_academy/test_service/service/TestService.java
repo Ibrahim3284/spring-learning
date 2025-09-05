@@ -3,6 +3,7 @@ package com.arrow_academy.test_service.service;
 import com.arrow_academy.test_service.dao.QuestionDao;
 import com.arrow_academy.test_service.dao.StudentTestDao;
 import com.arrow_academy.test_service.dao.TestDao;
+import com.arrow_academy.test_service.dao.TestDetailsDao;
 import com.arrow_academy.test_service.feign.UserInterface;
 import com.arrow_academy.test_service.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,132 +43,222 @@ public class TestService {
     @Autowired
     private UserInterface userInterface;
 
-    public ResponseEntity<String> addTest(String token, String title, String subject, String startTime, int duration, int testWindow, List<Question> questionList, List<MultipartFile> imageFiles) throws IOException, ParseException {
+    @Autowired
+    private TestDetailsDao testDetailsDao;
 
-        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
-            int i = 0;
-            for (Question question : questionList) {
-                if(question.isHasImage()) {
-                    question.setQuestionImageName(imageFiles.get(i).getOriginalFilename());
-                    question.setQuestionImageType(imageFiles.get(i).getContentType());
-                    question.setQuestionImageData(imageFiles.get(i).getBytes());
-                    i++;
+    public ResponseEntity<?> addTest(String token, String title, Date date, String subject, List<Question> questions, List<MultipartFile> images) throws IOException {
+        String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
+
+        if(!role.equals("faculty")) return new ResponseEntity<>("Only faculties can add test", HttpStatus.FORBIDDEN);
+        Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+
+        if(testDetails.isEmpty()) return new ResponseEntity<>("Test details doesnt exist", HttpStatus.NOT_FOUND);
+
+        int i = 0;
+        for(Question question : questions) {
+            if(question.isHasImage()) {
+                question.setQuestionImageName(images.get(i).getName());
+                question.setQuestionImageType(images.get(i).getContentType());
+                question.setQuestionImageData(images.get(i).getBytes());
+
+                i++;
+            }
+        }
+
+        List<Question> questionsAdded = questionDao.saveAll(questions);
+
+        Test test = new Test();
+        test.setSubject(subject);
+        List<Integer> questionIds = new ArrayList<>();
+
+        for(Question question : questionsAdded) questionIds.add(question.getId());
+        test.setQuestionIds(questionIds);
+
+        TestDetails testDetails1 = testDetails.get();
+        test.setTestDetails(testDetails1);
+
+        testDao.save(test);
+        return new ResponseEntity<>("Test created successfully", HttpStatus.CREATED);
+    }
+
+    public ResponseEntity<?> getQuestions(String token, String title, Date date) {
+        String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
+
+        if(!role.equals("faculty") && !role.equals("student")) return new ResponseEntity<>("Test can be viewed by students or faculties", HttpStatus.FORBIDDEN);
+
+        if(role.equals("faculty")) {
+            Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+            if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
+
+            Map<String, List<Question>> questionsSubjectMap = new HashMap<>();
+
+            int testDetailsId = testDetails.get().getId();
+            List<Test> tests = testDao.findByTestDetailsId(testDetailsId);
+
+            for(Test test :  tests) {
+                List<Integer> questionIds = test.getQuestionIds();
+                List<Question> questions = new ArrayList<>();
+
+                for(Integer questionId : questionIds) questions.add(questionDao.findById(questionId).get());
+
+                questionsSubjectMap.put(test.getSubject(), questions);
+            }
+
+            return new ResponseEntity<>(questionsSubjectMap, HttpStatus.OK);
+        } else {
+            Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+            if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
+
+            Map<String, List<QuestionWrapper>> questionsSubjectMap = new HashMap<>();
+
+            int testDetailsId = testDetails.get().getId();
+            List<Test> tests = testDao.findByTestDetailsId(testDetailsId);
+
+            for(Test test :  tests) {
+                List<Integer> questionIds = test.getQuestionIds();
+                List<QuestionWrapper> questionWrappers = new ArrayList<>();
+
+                for(Integer questionId : questionIds) {
+                    Question question = questionDao.findById(questionId).get();
+
+                    QuestionWrapper questionWrapper = new QuestionWrapper();
+                    questionWrapper.setQuestionTitle(question.getQuestionTitle());
+                    questionWrapper.setQuestion(question.getQuestionImageData());
+                    questionWrapper.setId(questionId);
+                    questionWrapper.setOption1(question.getOption1());
+                    questionWrapper.setOption2(question.getOption2());
+                    questionWrapper.setOption3(question.getOption3());
+                    questionWrapper.setOption4(question.getOption4());
+
+                    questionWrappers.add(questionWrapper);
                 }
+
+                questionsSubjectMap.put(test.getSubject(), questionWrappers);
             }
-            List<Question> questionsAdded = questionDao.saveAll(questionList);
 
-            Test test = new Test();
-            test.setSubjectName(subject);
-            test.setTestTitle(title);
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            Date parsedDate = sdf.parse(startTime);
-            Timestamp timestamp = new Timestamp(parsedDate.getTime());
-            test.setStart_time(timestamp);
-            test.setDuration(duration);
-            test.setTestWindow(testWindow);
-
-            List<Integer> questionIds = new ArrayList<>();
-            for (Question question : questionsAdded) {
-                questionIds.add(question.getId());
-            }
-            test.setQuestionIds(questionIds);
-
-            testDao.save(test);
-
-            return new ResponseEntity<>("Test added successfully", HttpStatus.OK);
-        } else return new ResponseEntity<>("Test can be added by faculty", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(questionsSubjectMap, HttpStatus.OK);
+        }
     }
 
-    public ResponseEntity<?> getTest(String token, String title, String subject) {
-        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty") || jwtService.parseTokenAsJSON(token).get("role").equals("student")) {
+    public ResponseEntity<?> attemptTest(String token, String title, Date date) {
+        try {
+            String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
 
-            Test test = testDao.findByTestTitleAndSubjectName(title, subject);
-            List<Integer> questionIds = test.getQuestionIds();
-            List<QuestionWrapper> questionWrappers = new ArrayList<>();
+            if(!role.equals("student")) return new ResponseEntity<>("Only students can take up this test", HttpStatus.FORBIDDEN);
 
-            for (int questionId : questionIds) {
-                QuestionWrapper questionWrapper = new QuestionWrapper();
-                Question question = questionDao.findById(questionId).get();
+            Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+            if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
 
-                questionWrapper.setId(question.getId());
-                if(question.getQuestionImageData() != null) questionWrapper.setQuestion(question.getQuestionImageData());
-                if(question.getQuestionTitle() != null) questionWrapper.setQuestionTitle(question.getQuestionTitle());
-                questionWrapper.setOption1(question.getOption1());
-                questionWrapper.setOption2(question.getOption2());
-                questionWrapper.setOption3(question.getOption3());
-                questionWrapper.setOption4(question.getOption4());
+            int studentId = Integer.parseInt(String.valueOf(userInterface.getStudentId(token).getBody()));
 
-                questionWrappers.add(questionWrapper);
-            }
-            return new ResponseEntity<>(questionWrappers, HttpStatus.OK);
-        } else return new ResponseEntity<>("Questions can be seen by students and faculties", HttpStatus.UNAUTHORIZED);
-    }
+            TestDetails testDetails1 = testDetails.get();
+            Optional<StudentTest> studentTestDetails = studentTestDao.findByStudentIdAndTestDetailsId(studentId, testDetails1.getId());
 
-    public ResponseEntity<?> getAllTests(String token) {
-        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty") || jwtService.parseTokenAsJSON(token).get("role").equals("student")) {
-            List<Test> tests = testDao.findAll();
-            List<TestWrapper> testWrappers = new ArrayList<>();
+            if(studentTestDetails.isEmpty()) {
 
-            for (Test test : tests) {
-                TestWrapper testWrapper = new TestWrapper();
-                testWrapper.setTestId(test.getId());
-                testWrapper.setTestTitle(test.getTestTitle());
-                testWrapper.setSubjectName(test.getSubjectName());
+                Timestamp testStartTime = testDetails1.getStartTime();
+                int window = testDetails1.getTestWindow();
+                int duration = testDetails1.getDuration();
 
-                testWrappers.add(testWrapper);
-            }
+                Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
 
-            return new ResponseEntity<>(testWrappers, HttpStatus.OK);
-        } else return new ResponseEntity<>("All tests can be seen by faculties", HttpStatus.UNAUTHORIZED);
-    }
+                LocalDateTime startTime = testStartTime.toLocalDateTime();
+                LocalDateTime maxStartTime = startTime.plusMinutes(window);
+                LocalDateTime maxEndTime = startTime.plusMinutes(window + duration);
 
-    public ResponseEntity<?> getAllQuestionsForATest(String token, int id) {
-        if(jwtService.parseTokenAsJSON(token).get("role").equals("faculty")) {
+                StudentTest studentTest = new StudentTest();
+                studentTest.setStudentId(studentId);
+                studentTest.setTestDetailsId(testDetails1.getId());
 
-            Test test = testDao.findById(id).get();
-            List<Integer> questionIds = test.getQuestionIds();
+                if (currentTimestamp.before(testStartTime)) {
+                    return new ResponseEntity<>("Test did not start yet.", HttpStatus.BAD_REQUEST);
+                }
 
-            List<Question> questions = new ArrayList<>();
-            for (int questionId : questionIds) {
-                questions.add(questionDao.findById(questionId).get());
-            }
+                if (currentTimestamp.after(Timestamp.valueOf(maxEndTime))) {
+                    return new ResponseEntity<>("Test is completed.", HttpStatus.BAD_REQUEST);
+                }
 
-            return new ResponseEntity<>(questions, HttpStatus.OK);
-        } else return new ResponseEntity<>("Test can be seen by faculties", HttpStatus.UNAUTHORIZED);
-    }
+                Timestamp actualStartTime;
+                Timestamp actualEndTime;
+                if (currentTimestamp.before(Timestamp.valueOf(maxStartTime))) {
+                    actualStartTime = currentTimestamp;
+                } else {
+                    actualStartTime = Timestamp.valueOf(maxStartTime);
+                }
+                actualEndTime = Timestamp.valueOf(actualStartTime.toLocalDateTime().plusMinutes(duration));
 
-    public ResponseEntity<?> getAllQuestionsWrappersForATest(String token, int id) {
-            Test test = testDao.findById(id).get();
-            List<QuestionWrapper> questionWrappers = new ArrayList<>();
-            List<Integer> questionIds = test.getQuestionIds();
+                studentTest.setStart_time(actualStartTime);
+                studentTest.setEnd_time(actualEndTime);
+                studentTest.setAttempted(false);
+                studentTestDao.save(studentTest);
 
-            for(int questionId : questionIds) {
-                Question question = questionDao.findById(questionId).get();
-
-                QuestionWrapper questionWrapper = new QuestionWrapper();
-                questionWrapper.setId(question.getId());
-                if(question.getQuestionTitle() != null) questionWrapper.setQuestionTitle(question.getQuestionTitle());
-                if(question.getQuestionImageData() != null) questionWrapper.setQuestion(question.getQuestionImageData());
-                questionWrapper.setOption1(question.getOption1());
-                questionWrapper.setOption2(question.getOption2());
-                questionWrapper.setOption3(question.getOption3());
-                questionWrapper.setOption4(question.getOption4());
-
-                questionWrappers.add(questionWrapper);
+                return getQuestions(token, title, date);
+            } else {
+                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time())) {
+                    if(studentTestDetails.get().isAttempted()) return new ResponseEntity<>("You have already attempted this test.", HttpStatus.BAD_REQUEST);
+                    else return getQuestions(token, title, date);
+                }
+                else
+                    return new ResponseEntity<>("Test is completed", HttpStatus.BAD_REQUEST);
             }
 
-            return new ResponseEntity<>(questionWrappers, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error attempting test with message: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public ResponseEntity<?> submitTest(Integer id, String token, List<Response> responses) throws IOException, URISyntaxException, InterruptedException {
+    public ResponseEntity<?> saveTest(String token, String title, Date date, List<Response> responses) throws JsonProcessingException {
+        String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
 
-        int studentId = userInterface.getStudentId(token).getBody();
+        if(!role.equals("student")) return new ResponseEntity<>("Only students can take up this test", HttpStatus.FORBIDDEN);
 
-        StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
+        Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+        if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
+
+        TestDetails testDetails1 = testDetails.get();
+        int studentId = Integer.parseInt(String.valueOf(userInterface.getStudentId(token).getBody()));
+
+        StudentTest studentTest = studentTestDao.findByStudentIdAndTestDetailsId(studentId, testDetails1.getId()).get();
 
         if(!studentTest.isAttempted()) {
             studentTest.setStudentId(studentId);
-            studentTest.setTestId(id);
+            studentTest.setTestDetailsId(testDetails1.getId());
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            Map<String, String> responsesMap = new HashMap<>();
+            for (Response response : responses) {
+                responsesMap.put(
+                        response.getQuestionId().toString(),
+                        response.getOptionSelected()
+                );
+            }
+
+            String jsonString = mapper.writeValueAsString(responsesMap);
+            studentTest.setResponses(jsonString);
+
+            studentTestDao.save(studentTest);
+            return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
+        } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
+    }
+
+    public ResponseEntity<?> submitTest(String token, String title, Date date, List<Response> responses) throws JsonProcessingException {
+        String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
+
+        if(!role.equals("student")) return new ResponseEntity<>("Only students can take up this test", HttpStatus.FORBIDDEN);
+
+        Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+        if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
+
+        TestDetails testDetails1 = testDetails.get();
+
+        int studentId = userInterface.getStudentId(token).getBody();
+
+        StudentTest studentTest = studentTestDao.findByStudentIdAndTestDetailsId(studentId, testDetails1.getId()).get();
+
+        if(!studentTest.isAttempted()) {
+            studentTest.setStudentId(studentId);
+            studentTest.setTestDetailsId(testDetails1.getId());
             studentTest.setAttempted(true);
 
             ObjectMapper mapper = new ObjectMapper();
@@ -180,102 +271,11 @@ public class TestService {
                 );
             }
 
-            // Convert to JSON string
             String jsonString = mapper.writeValueAsString(responsesMap);
             studentTest.setResponses(jsonString);
 
             studentTestDao.save(studentTest);
             return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
-        } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
-    }
-
-    public ResponseEntity<?> attemptQuestionsOfATest(String token, int id) {
-        try {
-            int sid = Integer.parseInt(String.valueOf(userInterface.getStudentId(token).getBody()));
-
-            Optional<StudentTest> studentTestDetails = studentTestDao.findByStudentIdAndTestId(sid, id);
-
-            if(studentTestDetails.isEmpty()) {
-                Test test = testDao.findById(id).orElseThrow(() -> new RuntimeException("Test not found"));
-
-                Timestamp testStartTime = test.getStart_time();
-                int windowSeconds = test.getTestWindow();
-                int durationSeconds = test.getDuration();
-
-                Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
-
-                LocalDateTime startTime = testStartTime.toLocalDateTime();
-                LocalDateTime maxStartTime = startTime.plusSeconds(windowSeconds);
-                LocalDateTime maxEndTime = startTime.plusSeconds(windowSeconds + durationSeconds);
-
-                StudentTest studentTest = new StudentTest();
-                studentTest.setStudentId(sid);
-                studentTest.setTestId(id);
-
-                if (currentTimestamp.before(testStartTime)) {
-                    return new ResponseEntity<>("Test did not start yet.", HttpStatus.BAD_REQUEST);
-                }
-
-                if (currentTimestamp.after(Timestamp.valueOf(maxEndTime))) {
-                    return new ResponseEntity<>("Test is completed.", HttpStatus.BAD_REQUEST);
-                }
-
-                // Determine actual start time
-                Timestamp actualStartTime;
-                Timestamp actualEndTime;
-                if (currentTimestamp.before(Timestamp.valueOf(maxStartTime))) {
-                    actualStartTime = currentTimestamp;
-                } else {
-                    actualStartTime = Timestamp.valueOf(maxStartTime);
-                }
-                actualEndTime = Timestamp.valueOf(actualStartTime.toLocalDateTime().plusSeconds(durationSeconds));
-
-                studentTest.setStart_time(actualStartTime);
-                studentTest.setEnd_time(actualEndTime);
-                studentTest.setAttempted(false);
-                studentTestDao.save(studentTest);
-
-                return getAllQuestionsWrappersForATest(token, id);
-            } else {
-                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time())) {
-                    if(studentTestDetails.get().isAttempted()) return new ResponseEntity<>("You have already attempted this test.", HttpStatus.BAD_REQUEST);
-                    else return getAllQuestionsWrappersForATest(token, id);
-                }
-                else
-                    return new ResponseEntity<>("Test is completed", HttpStatus.BAD_REQUEST);
-            }
-
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error attempting test with message: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public ResponseEntity<?> saveTest(int id, String token, List<Response> responses) throws JsonProcessingException {
-        int studentId = userInterface.getStudentId(token).getBody();
-
-        StudentTest studentTest = studentTestDao.findByStudentIdAndTestId(studentId, id).get();
-
-        if(!studentTest.isAttempted()) {
-            studentTest.setStudentId(studentId);
-            studentTest.setTestId(id);
-
-            ObjectMapper mapper = new ObjectMapper();
-
-            Map<String, String> responsesMap = new HashMap<>();
-            for (Response response : responses) {
-                responsesMap.put(
-                        response.getQuestionId().toString(),
-                        response.getOptionSelected()
-                );
-            }
-
-            // Convert to JSON string
-            String jsonString = mapper.writeValueAsString(responsesMap);
-            studentTest.setResponses(jsonString);
-
-            studentTestDao.save(studentTest);
-            return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
         } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
     }
 }
