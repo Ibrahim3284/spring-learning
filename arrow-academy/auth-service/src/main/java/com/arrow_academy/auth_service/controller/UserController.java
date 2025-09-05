@@ -1,8 +1,10 @@
 package com.arrow_academy.auth_service.controller;
 
+import com.arrow_academy.auth_service.model.ResetPassword;
 import com.arrow_academy.auth_service.model.User;
 import com.arrow_academy.auth_service.model.UserWrapper;
 import com.arrow_academy.auth_service.services.JwtService;
+import com.arrow_academy.auth_service.services.PasswordResetService;
 import com.arrow_academy.auth_service.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class UserController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private PasswordResetService passwordResetService;
 
     @PostMapping("register")
     public ResponseEntity<String> register(@Valid @RequestBody User user, BindingResult result) {
@@ -70,5 +75,15 @@ public class UserController {
     public ResponseEntity<Boolean> isFaculty(@RequestBody UserWrapper user) {
 
         return service.isFaculty(user);
+    }
+
+    @PostMapping("forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam("email") String email) {
+        return passwordResetService.sendEmail(email);
+    }
+
+    @PostMapping("reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam("otp") Integer otp, @RequestBody ResetPassword resetPassword) {
+        return passwordResetService.resetPassword(resetPassword, otp);
     }
 }

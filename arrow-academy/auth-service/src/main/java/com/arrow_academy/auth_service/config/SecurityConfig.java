@@ -41,7 +41,7 @@ public class SecurityConfig {
 
         http.csrf(customizer -> customizer.disable());
         http.authorizeHttpRequests(request -> request
-                .requestMatchers("register", "login", "isStudent", "isAdmin", "isFaculty")
+                .requestMatchers("register", "login", "isStudent", "isAdmin", "isFaculty", "forgot-password", "reset-password")
                 .permitAll()
                 .anyRequest().authenticated());
         http.httpBasic(Customizer.withDefaults());
