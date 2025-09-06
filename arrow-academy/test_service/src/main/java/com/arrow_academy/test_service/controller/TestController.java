@@ -21,7 +21,7 @@ public class TestController {
     private TestService testService;
 
     @PostMapping("add")
-    public ResponseEntity<?> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestParam("subject") String subject, @RequestPart("questions") List<Question> questions, @RequestPart("images") List<MultipartFile> images) throws IOException {
+    public ResponseEntity<?> addTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestParam("subject") String subject, @RequestPart("questions") List<Question> questions, @RequestPart(value = "images", required = false) List<MultipartFile> images) throws IOException {
         return testService.addTest(token, title, date, subject, questions, images);
     }
 
