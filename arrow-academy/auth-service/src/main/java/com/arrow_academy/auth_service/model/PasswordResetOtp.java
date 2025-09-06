@@ -2,7 +2,7 @@ package com.arrow_academy.auth_service.model;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 
 @Entity
 public class PasswordResetOtp {
@@ -18,7 +18,7 @@ public class PasswordResetOtp {
 
     private boolean isConsumed;
 
-    private Timestamp expiryTime;
+    private Instant expiryTime;
 
     public String getEmail() {
         return email;
@@ -44,11 +44,11 @@ public class PasswordResetOtp {
         isConsumed = consumed;
     }
 
-    public Timestamp getExpiryTime() {
+    public Instant getExpiryTime() {
         return expiryTime;
     }
 
-    public void setExpiryTime(Timestamp expiryTime) {
+    public void setExpiryTime(Instant expiryTime) {
         this.expiryTime = expiryTime;
     }
 

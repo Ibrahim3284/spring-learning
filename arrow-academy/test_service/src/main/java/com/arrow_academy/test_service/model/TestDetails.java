@@ -2,7 +2,7 @@ package com.arrow_academy.test_service.model;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Date;
 
 @Entity
@@ -24,7 +24,7 @@ public class TestDetails {
     private Date date;
 
     @Column(nullable = false)
-    private Timestamp startTime;
+    private Instant startTime;
 
     @Column(nullable = false)
     private int duration;
@@ -56,11 +56,11 @@ public class TestDetails {
         this.date = date;
     }
 
-    public Timestamp getStartTime() {
+    public Instant getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(Timestamp startTime) {
+    public void setStartTime(Instant startTime) {
         this.startTime = startTime;
     }
 

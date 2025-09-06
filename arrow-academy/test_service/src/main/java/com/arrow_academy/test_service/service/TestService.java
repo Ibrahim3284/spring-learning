@@ -7,8 +7,7 @@ import com.arrow_academy.test_service.dao.TestDetailsDao;
 import com.arrow_academy.test_service.feign.UserInterface;
 import com.arrow_academy.test_service.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.hibernate.annotations.CurrentTimestamp;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -17,15 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -150,62 +144,62 @@ public class TestService {
         try {
             String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
 
-            if(!role.equals("student")) return new ResponseEntity<>("Only students can take up this test", HttpStatus.FORBIDDEN);
+            if (!role.equals("student"))
+                return new ResponseEntity<>("Only students can take up this test", HttpStatus.FORBIDDEN);
 
             Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
-            if(testDetails.isEmpty()) return new ResponseEntity<>("Test doesnt exist", HttpStatus.NOT_FOUND);
+            if (testDetails.isEmpty())
+                return new ResponseEntity<>("Test doesn't exist", HttpStatus.NOT_FOUND);
 
             int studentId = Integer.parseInt(String.valueOf(userInterface.getStudentId(token).getBody()));
-
             TestDetails testDetails1 = testDetails.get();
+
             Optional<StudentTest> studentTestDetails = studentTestDao.findByStudentIdAndTestDetailsId(studentId, testDetails1.getId());
 
-            if(studentTestDetails.isEmpty()) {
-
-                Timestamp testStartTime = testDetails1.getStartTime();
+            if (studentTestDetails.isEmpty()) {
+                // Convert start time to Instant
+                Instant testStartInstant = testDetails1.getStartTime();
                 int window = testDetails1.getTestWindow();
                 int duration = testDetails1.getDuration();
 
-                Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
+                Instant now = Instant.now(); // Always in UTC
 
-                LocalDateTime startTime = testStartTime.toLocalDateTime();
-                LocalDateTime maxStartTime = startTime.plusMinutes(window);
-                LocalDateTime maxEndTime = startTime.plusMinutes(window + duration);
+                Instant maxStartInstant = testStartInstant.plus(window, ChronoUnit.MINUTES);
+                Instant maxEndInstant = testStartInstant.plus(window + duration, ChronoUnit.MINUTES);
+
+                if (now.isBefore(testStartInstant)) {
+                    return new ResponseEntity<>("Test did not start yet.", HttpStatus.BAD_REQUEST);
+                }
+
+                if (now.isAfter(maxEndInstant)) {
+                    return new ResponseEntity<>("Test is completed.", HttpStatus.BAD_REQUEST);
+                }
+
+                Instant actualStartInstant = now.isBefore(maxStartInstant) ? now : maxStartInstant;
+                Instant actualEndInstant = actualStartInstant.plus(duration, ChronoUnit.MINUTES);
 
                 StudentTest studentTest = new StudentTest();
                 studentTest.setStudentId(studentId);
                 studentTest.setTestDetailsId(testDetails1.getId());
-
-                if (currentTimestamp.before(testStartTime)) {
-                    return new ResponseEntity<>("Test did not start yet.", HttpStatus.BAD_REQUEST);
-                }
-
-                if (currentTimestamp.after(Timestamp.valueOf(maxEndTime))) {
-                    return new ResponseEntity<>("Test is completed.", HttpStatus.BAD_REQUEST);
-                }
-
-                Timestamp actualStartTime;
-                Timestamp actualEndTime;
-                if (currentTimestamp.before(Timestamp.valueOf(maxStartTime))) {
-                    actualStartTime = currentTimestamp;
-                } else {
-                    actualStartTime = Timestamp.valueOf(maxStartTime);
-                }
-                actualEndTime = Timestamp.valueOf(actualStartTime.toLocalDateTime().plusMinutes(duration));
-
-                studentTest.setStart_time(actualStartTime);
-                studentTest.setEnd_time(actualEndTime);
+                studentTest.setStart_time(actualStartInstant);
+                studentTest.setEnd_time(actualEndInstant);
                 studentTest.setAttempted(false);
+
                 studentTestDao.save(studentTest);
 
                 return getQuestions(token, title, date);
             } else {
-                if(Timestamp.valueOf(LocalDateTime.now()).before(studentTestDetails.get().getEnd_time())) {
-                    if(studentTestDetails.get().isAttempted()) return new ResponseEntity<>("You have already attempted this test.", HttpStatus.BAD_REQUEST);
-                    else return getQuestions(token, title, date);
-                }
-                else
+                Instant now = Instant.now();
+                Instant endTime = studentTestDetails.get().getEnd_time();
+
+                if (now.isBefore(endTime)) {
+                    if (studentTestDetails.get().isAttempted())
+                        return new ResponseEntity<>("You have already attempted this test.", HttpStatus.BAD_REQUEST);
+                    else
+                        return getQuestions(token, title, date);
+                } else {
                     return new ResponseEntity<>("Test is completed", HttpStatus.BAD_REQUEST);
+                }
             }
 
         } catch (Exception e) {

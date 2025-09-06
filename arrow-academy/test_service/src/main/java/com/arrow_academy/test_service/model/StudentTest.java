@@ -1,11 +1,8 @@
 package com.arrow_academy.test_service.model;
 
 import jakarta.persistence.*;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
-import java.sql.Timestamp;
-import java.util.List;
+import java.time.Instant;
 
 @Entity
 public class StudentTest {
@@ -16,8 +13,8 @@ public class StudentTest {
 
     private int studentId;
     private int testDetailsId;
-    private Timestamp start_time;
-    private Timestamp end_time;
+    private Instant start_time;
+    private Instant end_time;
 
     private boolean isAttempted;
 
@@ -40,11 +37,11 @@ public class StudentTest {
         this.testDetailsId = testDetailsId;
     }
 
-    public Timestamp getStart_time() {
+    public Instant getStart_time() {
         return start_time;
     }
 
-    public void setStart_time(Timestamp start_time) {
+    public void setStart_time(Instant start_time) {
         this.start_time = start_time;
     }
 
@@ -56,11 +53,11 @@ public class StudentTest {
         this.responses = responses;
     }
 
-    public Timestamp getEnd_time() {
+    public Instant getEnd_time() {
         return end_time;
     }
 
-    public void setEnd_time(Timestamp end_time) {
+    public void setEnd_time(Instant end_time) {
         this.end_time = end_time;
     }
 

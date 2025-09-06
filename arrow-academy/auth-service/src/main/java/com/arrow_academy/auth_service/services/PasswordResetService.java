@@ -5,9 +5,7 @@ import com.arrow_academy.auth_service.dao.UserRepo;
 import com.arrow_academy.auth_service.model.PasswordResetOtp;
 import com.arrow_academy.auth_service.model.ResetPassword;
 import com.arrow_academy.auth_service.model.User;
-import jakarta.persistence.Access;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,12 +13,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
 
 @Service
 public class PasswordResetService {
@@ -49,14 +44,14 @@ public class PasswordResetService {
             PasswordResetOtp resetOtp = new PasswordResetOtp();
             resetOtp.setOtp(otp);
             resetOtp.setEmail(email);
-            resetOtp.setExpiryTime(Timestamp.valueOf(LocalDateTime.now().plusDays(1))); // 15 minutes validity
+            resetOtp.setExpiryTime(Instant.now().plusSeconds(86400)); // 15 minutes validity
             resetOtp.setConsumed(false);
 
             passwordResetOtpRepo.save(resetOtp);
         } else {
             PasswordResetOtp resetOtp = passwordResetOtpRepo.findByEmail(email).get();
             resetOtp.setOtp(otp);
-            resetOtp.setExpiryTime(Timestamp.valueOf(LocalDateTime.now().plusDays(1)));
+            resetOtp.setExpiryTime(Instant.now().plusSeconds(86400));
             resetOtp.setConsumed(false);
 
             passwordResetOtpRepo.save(resetOtp);
@@ -84,7 +79,7 @@ public class PasswordResetService {
 
         if(passwordResetOtpRepo.findByOtp(otp).isEmpty() || !(passwordResetOtpRepo.findByEmail(resetPassword.getUsername()).get().getOtp() == otp)) return new ResponseEntity<>("OTP doesnt exist or otp doesnt match", HttpStatus.NOT_FOUND);
 
-        if(passwordResetOtpRepo.findByOtp(otp).get().getExpiryTime().after(Timestamp.valueOf(LocalDateTime.now()))) {
+        if(passwordResetOtpRepo.findByOtp(otp).get().getExpiryTime().isAfter(Instant.now())) {
 
             if(!resetPassword.getConfirmPassword().equals(resetPassword.getPassword())) return new ResponseEntity<>("Confirm password field doesnt match with password field", HttpStatus.BAD_REQUEST);
 
