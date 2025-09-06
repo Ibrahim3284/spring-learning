@@ -5,6 +5,11 @@ public class Response {
     private String questionId;
     private String optionSelected;
 
+    public Response(String questionId, String optionSelected) {
+        this.questionId = questionId;
+        this.optionSelected = optionSelected;
+    }
+
     public String getQuestionId() {
         return questionId;
     }

@@ -7,7 +7,11 @@ import com.arrow_academy.test_service.dao.TestDetailsDao;
 import com.arrow_academy.test_service.feign.UserInterface;
 import com.arrow_academy.test_service.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.hibernate.annotations.CurrentTimestamp;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -122,8 +125,11 @@ public class TestService {
                     Question question = questionDao.findById(questionId).get();
 
                     QuestionWrapper questionWrapper = new QuestionWrapper();
-                    questionWrapper.setQuestionTitle(question.getQuestionTitle());
-                    questionWrapper.setQuestion(question.getQuestionImageData());
+                    if(question.getQuestionTitle() != null) questionWrapper.setQuestionTitle(question.getQuestionTitle());
+                    if(question.getQuestionImageData() != null) {
+                        questionWrapper.setQuestionImageType(question.getQuestionImageType());
+                        questionWrapper.setQuestion(question.getQuestionImageData());
+                    }
                     questionWrapper.setId(questionId);
                     questionWrapper.setOption1(question.getOption1());
                     questionWrapper.setOption2(question.getOption2());
@@ -224,18 +230,11 @@ public class TestService {
             studentTest.setStudentId(studentId);
             studentTest.setTestDetailsId(testDetails1.getId());
 
-            ObjectMapper mapper = new ObjectMapper();
-
-            Map<String, String> responsesMap = new HashMap<>();
-            for (Response response : responses) {
-                responsesMap.put(
-                        response.getQuestionId().toString(),
-                        response.getOptionSelected()
-                );
+            JSONObject jsonObject = new JSONObject();
+            for(Response response : responses) {
+                jsonObject.put(response.getQuestionId().toString(), response.getOptionSelected().toString());
             }
-
-            String jsonString = mapper.writeValueAsString(responsesMap);
-            studentTest.setResponses(jsonString);
+            studentTest.setResponses(jsonObject.toString());
 
             studentTestDao.save(studentTest);
             return new ResponseEntity<>("Test saved successfully", HttpStatus.OK);
@@ -261,21 +260,54 @@ public class TestService {
             studentTest.setTestDetailsId(testDetails1.getId());
             studentTest.setAttempted(true);
 
-            ObjectMapper mapper = new ObjectMapper();
-
-            Map<String, String> responsesMap = new HashMap<>();
-            for (Response response : responses) {
-                responsesMap.put(
-                        response.getQuestionId().toString(),
-                        response.getOptionSelected()
-                );
+            JSONObject jsonObject = new JSONObject();
+            for(Response response : responses) {
+                jsonObject.put(response.getQuestionId().toString(), response.getOptionSelected().toString());
             }
-
-            String jsonString = mapper.writeValueAsString(responsesMap);
-            studentTest.setResponses(jsonString);
-
+            studentTest.setResponses(jsonObject.toString());
             studentTestDao.save(studentTest);
+
             return new ResponseEntity<>("Test submitted successfully", HttpStatus.OK);
         } else return new ResponseEntity<>("You have already taken this test", HttpStatus.BAD_REQUEST);
+    }
+
+    public ResponseEntity<?> getResponses(String token, String title, Date date) throws JsonProcessingException {
+        String role = String.valueOf(jwtService.parseTokenAsJSON(token).get("role"));
+
+        if(!role.equals("student")) return new ResponseEntity<>("Responses are available only for students", HttpStatus.FORBIDDEN);
+
+        Optional<TestDetails> testDetails = testDetailsDao.findByTitleAndDate(title, date);
+        if(testDetails.isEmpty()) return new ResponseEntity<>("Test is not available", HttpStatus.NOT_FOUND);
+
+        int studentId = userInterface.getStudentId(token).getBody();
+        Optional<StudentTest> studentTest = studentTestDao.findByStudentIdAndTestDetailsId(studentId, testDetails.get().getId());
+
+        if(studentTest.isEmpty()) return new ResponseEntity<>("Student did not attempt this test", HttpStatus.NOT_FOUND);
+
+        StudentTest studentTest1 = studentTest.get();
+
+        String responses = studentTest1.getResponses();
+        System.out.println("responses JSON string: " + responses);
+        if(responses == null) return new ResponseEntity<>(new ArrayList<Response>(), HttpStatus.OK);
+        else {
+            JSONParser parser = new JSONParser();
+
+            JSONObject jsonObject = null;
+
+            try {
+                jsonObject = (JSONObject) parser.parse(responses);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                // handle error
+            }
+
+            List<Response> responses1 = new ArrayList<>();
+            for(Object key : jsonObject.keySet()) {
+                Response response = new Response(key.toString(), jsonObject.get(key).toString());
+                responses1.add(response);
+            }
+
+            return new ResponseEntity<>(responses1, HttpStatus.OK);
+        }
     }
 }

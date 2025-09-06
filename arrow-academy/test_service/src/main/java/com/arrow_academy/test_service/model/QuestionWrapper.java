@@ -5,6 +5,7 @@ public class QuestionWrapper {
     private int id;
     private String questionTitle;
     private byte[] question;
+    private String questionImageType;
     private String option1;
     private String option2;
     private String option3;
@@ -64,5 +65,13 @@ public class QuestionWrapper {
 
     public void setQuestionTitle(String questionTitle) {
         this.questionTitle = questionTitle;
+    }
+
+    public String getQuestionImageType() {
+        return questionImageType;
+    }
+
+    public void setQuestionImageType(String questionImageType) {
+        this.questionImageType = questionImageType;
     }
 }

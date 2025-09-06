@@ -44,4 +44,9 @@ public class TestController {
     public ResponseEntity<?> submitTest(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestBody List<Response> responses) throws JsonProcessingException {
         return testService.submitTest(token, title, date, responses);
     }
+
+    @GetMapping("responses")
+    public ResponseEntity<?> getResponses(@RequestHeader("Authorization") String token, @RequestParam("title") String title, @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) throws JsonProcessingException {
+        return testService.getResponses(token, title, date);
+    }
 }
